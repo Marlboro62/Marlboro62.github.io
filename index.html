@@ -1,0 +1,254 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Cartes Marlboro62</title>
+<meta name="description" content="Vitrine des cartes Lovelace pour Home Assistant de Marlboro62 : toutes les cartes réunies dans un tableau de bord, avec des données fictives.">
+<style>
+  :root {
+    color-scheme: dark;
+    /* variables du thème sombre de Home Assistant, utilisées par les cartes */
+    --primary-color: #03a9f4; --accent-color: #ff9800; --primary-text-color: #e1e1e1; --secondary-text-color: #9b9b9b;
+    --primary-background-color: #111111; --secondary-background-color: #202020; --card-background-color: #1c1c1c;
+    --ha-card-background: #1c1c1c; --divider-color: rgba(225, 225, 225, .12); --ha-card-border-radius: 12px;
+    --state-icon-color: #44739e; --success-color: #43a047; --warning-color: #ffa600; --error-color: #db4437; --info-color: #039be5;
+    --rgb-primary-text-color: 225, 225, 225;
+    --bg: #0b1220; --bar: #0f1a2e; --line: #22324d; --text: #e7edf5; --muted: #8fa0b8; --acc: #1d93e3;
+  }
+  * { box-sizing: border-box; }
+  body { margin: 0; background: var(--bg); color: var(--text); font-family: Roboto, system-ui, -apple-system, "Segoe UI", sans-serif; }
+  a { color: #6cc4ff; }
+  header { padding: 22px 16px 10px; max-width: 1500px; margin: 0 auto; }
+  header h1 { margin: 0; font-size: 1.6rem; font-weight: 600; }
+  header p { margin: 6px 0 0; color: var(--muted); font-size: .95rem; line-height: 1.45; }
+  .warn { margin: 12px 0 0; padding: 10px 14px; border-radius: 10px; background: rgba(238, 74, 74, .12); border: 1px solid rgba(238, 74, 74, .45); color: #ffb3b3; font-size: .9rem; }
+  nav { position: sticky; top: 0; z-index: 5; background: rgba(11, 18, 32, .94); backdrop-filter: blur(8px); border-bottom: 1px solid var(--line); }
+  nav .in { max-width: 1500px; margin: 0 auto; padding: 8px 12px; display: flex; gap: 6px; overflow-x: auto; scrollbar-width: none; }
+  nav button { flex: none; border: 1px solid var(--line); background: var(--bar); color: var(--text); border-radius: 999px; padding: 8px 14px; font: inherit; font-size: .9rem; cursor: pointer; }
+  nav button.on { background: var(--acc); border-color: var(--acc); color: #fff; }
+  main { max-width: 1500px; margin: 0 auto; padding: 16px 12px 40px; }
+  .group { margin: 0 0 26px; }
+  .group h2 { margin: 0 0 4px; font-size: 1.1rem; font-weight: 600; }
+  .group .meta { margin: 0 0 12px; color: var(--muted); font-size: .85rem; }
+  .group .meta a { margin-right: 12px; }
+  .grid { columns: 380px auto; column-gap: 16px; }
+  .slot { break-inside: avoid; margin: 0 0 16px; display: block; }
+  .slot.wide { column-span: all; }
+  .loading { color: var(--muted); font-size: .9rem; padding: 18px 4px; }
+  footer { max-width: 1500px; margin: 0 auto; padding: 20px 16px 40px; color: var(--muted); font-size: .85rem; border-top: 1px solid var(--line); }
+  /* démos ouvertes en arrière-plan, hors de l'écran (elles fournissent les cartes et leurs données fictives) */
+  iframe.src { position: fixed; left: -12000px; top: 0; width: 1300px; height: 1000px; border: 0; visibility: hidden; pointer-events: none; }
+  @media (max-width: 600px) { header h1 { font-size: 1.3rem; } .grid { columns: 1; } }
+</style>
+</head>
+<body>
+<header>
+  <h1>Cartes Lovelace pour Home Assistant</h1>
+  <p>Toutes mes cartes réunies dans un tableau de bord, <b>avec des données fictives</b> : rien n'est relié à une vraie maison. Elles sont en français, ont un éditeur visuel et s'installent depuis le <b>Marketplace</b> de Home Assistant (ou HACS avant la 2026.11). Chaque groupe renvoie à sa démo complète et à son dépôt GitHub.</p>
+  <p class="warn">⛔ Aucun support sur les forums : questions, idées et bugs se font sur GitHub, dans l'onglet « Issues » de chaque carte.</p>
+</header>
+<nav><div class="in" id="tabs"></div></nav>
+<main id="main"></main>
+<footer>
+  Cartes sous licence MIT, par <a href="https://github.com/Marlboro62">Marlboro62</a>. Les données affichées sont inventées. Icônes : <a href="https://pictogrammers.com/library/mdi/">Material Design Icons</a>.
+  ☕ <a href="https://www.buymeacoffee.com/Marlboro62">Offrir un café</a> · <a href="https://ko-fi.com/M4M2QL45X">Ko-fi</a>
+</footer>
+<script>
+(() => {
+  "use strict";
+  /* Home Assistant fournit <ha-card> et <ha-icon> ; ici, <ha-icon> affiche les icônes Material Design Icons. */
+  if (!customElements.get("ha-card")) {
+    customElements.define("ha-card", class extends HTMLElement {
+      constructor() { super(); this.attachShadow({ mode: "open" }).innerHTML = "<style>:host{display:block}</style><slot></slot>"; }
+    });
+  }
+  if (!customElements.get("ha-icon")) {
+    customElements.define("ha-icon", class extends HTMLElement {
+      static get observedAttributes() { return ["icon"]; }
+      connectedCallback() { this._draw(); }
+      attributeChangedCallback() { this._draw(); }
+      _draw() {
+        const name = (this.getAttribute("icon") || "").replace(/^mdi:/, "");
+        if (!/^[a-z0-9-]+$/.test(name)) return;
+        const url = `https://cdn.jsdelivr.net/npm/@mdi/svg@7.4.47/svg/${name}.svg`;
+        this.style.cssText += `;display:inline-block;width:var(--mdc-icon-size,24px);height:var(--mdc-icon-size,24px);flex:none;` +
+          `background:currentColor;-webkit-mask:url(${url}) center/contain no-repeat;mask:url(${url}) center/contain no-repeat;`;
+      }
+    });
+  }
+  if (!customElements.get("hui-markdown-card")) customElements.define("hui-markdown-card", class extends HTMLElement { setConfig(c) { this.textContent = c.content; } });
+
+  /*
+   * Chaque groupe vient de la démo de son dépôt : la page l'ouvre hors de l'écran, clique au besoin sur ses boutons
+   * (data-v) pour afficher chaque carte, puis déplace ici les cartes rendues, avec leurs données fictives.
+   *   steps : boutons à cliquer avant chaque relevé (le premier relevé se fait sans clic si steps commence par [])
+   *   keep  : nombre de cartes gardées par type (1 par défaut)
+   *   wide  : types affichés sur toute la largeur
+   */
+  const G = (repo, name, desc, extra = {}) => ({ repo, name, desc, ...extra });
+  const TABS = [
+    { id: "energie", label: "⚡ Énergie", groups: [
+      G("content-card-linky-new", "Carte Enedis Linky New", "Consommation, production, Tempo et Gazpar avec MyElectricalData new."),
+      G("linky-energie-cards", "Cartes Linky Énergie", "Puissance, facture, postes et prix Tempo, cycle, intensité carbone, services Enedis, EcoWatt."),
+      G("linky-appareils-card", "Carte Linky Appareils", "Coût de chaque circuit et de chaque appareil."),
+      G("linky-solaire-card", "Carte Linky Solaire", "Production, autoconsommation, import et export, jour par jour."),
+      G("Option-EJP", "Carte Option EJP", "Jours EJP du Tarif Bleu, Pointe Mobile, jours restants."),
+    ] },
+    { id: "maison", label: "🏠 Maison", groups: [
+      G("maison-ha-cards", "Cartes Maison HA", "Un tableau de bord maison complet, sans button-card.", {
+        steps: [["dark", "v2", "large", "chips"], ["maison"], ["plan"], ["lumieres"], ["volets"], ["tuiles"], ["appareils"], ["menu"]],
+        keep: { "maison-mode-card": 2 }, skip: ["maison-voiture-card", "maison-torque-card", "maison-batteries-card", "maison-telephones-card"] }),
+      G("electromenager", "Cartes Électroménager", "L'aspirateur robot en détail, avec la carte du logement."),
+      G("nvr-card", "NVR Card", "Enregistreur vidéo : direct, frise 24 h, détections."),
+    ] },
+    { id: "serveurs", label: "🖥️ Serveurs et réseau", groups: [
+      G("serveur-ha-card", "Cartes Serveur HA", "Serveur, mises à jour, NAS, Proxmox, DNS, Linux, OpenMediaVault, ASUS, réseau, Zigbee, WireGuard, Glances, multimédia."),
+      G("opnsense-card", "Carte OPNsense", "Pare-feu OPNsense : passerelles, débits, ressources."),
+      G("onduleur-ups-card", "Carte Onduleur UPS", "État d'un onduleur avec Network UPS Tools."),
+    ] },
+    { id: "meteo", label: "🌦️ Météo et espace", groups: [
+      G("meteo-card", "Cartes Météo", "Météo, vigilance, soleil et lune, séismes, feux, crues, EcoWatt, éclairs, pollens, bolides, marine, plage, montagne."),
+      G("ISS", "Cartes ISS et espace", "Position de l'ISS, passages, transits, prochain lancement, réunis dans « Opérations spatiales ».", { wide: ["iss-space-dashboard-card"], only: ["iss-space-dashboard-card"] }),
+    ] },
+    { id: "vehicules", label: "🚗 Véhicules", groups: [
+      G("voitures-electriques-hybrides-rechargeables", "Cartes Voitures", "Voitures électriques et hybrides, thermiques avec Torque, batteries 12 V.", {
+        steps: [["dark", "v2", "large", "electrique"], ["thermique"], ["batteries"]] }),
+      G("prix-carburant-card", "Carte Prix Carburant", "Prix et comparatif de vos stations-service."),
+    ] },
+    { id: "famille", label: "👪 Famille et santé", groups: [
+      G("tracker", "Carte Présence et téléphone", "Où est chacun, et l'état de son téléphone.", { keep: { "tracker-card": 3 } }),
+      G("maison-ha-cards", "Téléphones et tablettes", "Tous les téléphones et tablettes de la maison (Cartes Maison HA).", { steps: [["dark", "v2", "large", "telephones"]], only: ["maison-telephones-card"] }),
+      G("sante-card", "Carte Santé", "Activité, cœur et sommeil avec un Mi Band 7."),
+    ] },
+    { id: "imprimantes", label: "🖨️ Imprimantes", groups: [
+      G("printers", "Cartes Imprimantes 3D et bureau", "Imprimantes 3D et de bureau.", { steps: [["dark", "v2", "large", "both"]] }),
+    ] },
+  ];
+
+  const tabsEl = document.getElementById("tabs"), main = document.getElementById("main");
+  const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
+  const esc = (s) => String(s).replace(/[&<>"]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]));
+  const BASE = "https://marlboro62.github.io/";
+  const loaded = new Set();
+
+  /* cartes rendues au premier niveau d'une démo (hors d'une autre carte) */
+  const cardsOf = (doc) => [...doc.querySelectorAll("*")].filter((el) => /-card(-|$)|^content-card-/.test(el.localName)
+    && !/^(ha-card|hui-)|-editor$/.test(el.localName) && (el.shadowRoot || el._hass || el.hass));
+
+  /* Les démos donnent parfois des adresses relatives (vidéos, photos, image de caméra) : elles deviennent absolues,
+     sinon elles seraient lues depuis la vitrine. */
+  const absolutize = (hass, base) => {
+    if (!hass || hass.__vitrine) return hass;
+    const abs = (u) => (typeof u === "string" && u && !/^([a-z]+:|\/|#)/i.test(u) ? new URL(u, base).href : u);
+    const fix = (r) => {
+      if (r && typeof r === "object") {
+        if (typeof r.url === "string") r.url = abs(r.url);
+        if (typeof r.thumbnail === "string") r.thumbnail = abs(r.thumbnail);
+        if (Array.isArray(r.children)) r.children.forEach(fix);
+      }
+      return r;
+    };
+    const wrap = (fn, ctx) => (typeof fn === "function" ? async (...a) => fix(await fn.apply(ctx, a)) : fn);
+    const states = {};
+    for (const [id, st] of Object.entries(hass.states || {})) {
+      const pic = st?.attributes?.entity_picture;
+      states[id] = typeof pic === "string" ? { ...st, attributes: { ...st.attributes, entity_picture: abs(pic) } } : st;
+    }
+    const conn = hass.connection ? Object.assign(Object.create(hass.connection), { sendMessagePromise: wrap(hass.connection.sendMessagePromise, hass.connection) }) : hass.connection;
+    return Object.assign(Object.create(Object.getPrototypeOf(hass)), hass, { states, callWS: wrap(hass.callWS, hass), connection: conn, __vitrine: true });
+  };
+
+  /* Images et vidéos des cartes déplacées : une adresse relative est lue depuis la démo d'origine. */
+  const fixMedia = (el, base) => {
+    const root = el.shadowRoot || el;
+    const isRel = (u) => u && !/^([a-z]+:|\/\/|#)/i.test(u);
+    const fixOne = (n) => {
+      for (const att of ["src", "poster", "href"]) {
+        const v = n.getAttribute?.(att);
+        if (v && isRel(v) && (att !== "href" || n.localName === "image")) n.setAttribute(att, new URL(v, base).href);
+      }
+    };
+    const sweep = (r) => r.querySelectorAll?.("img,video,source,image,iframe").forEach(fixOne);
+    sweep(root);
+    new MutationObserver((muts) => {
+      for (const m of muts) {
+        if (m.type === "attributes") fixOne(m.target);
+        else m.addedNodes.forEach((n) => { if (n.nodeType === 1) { fixOne(n); sweep(n); } });
+      }
+    }).observe(root, { subtree: true, childList: true, attributes: true, attributeFilter: ["src", "poster", "href"] });
+  };
+
+  async function harvest(group, box) {
+    const ifr = document.createElement("iframe");
+    ifr.className = "src"; ifr.setAttribute("aria-hidden", "true"); ifr.tabIndex = -1;
+    ifr.src = `${BASE}${group.repo}/docs/demo.html`;
+    document.body.appendChild(ifr);
+    await new Promise((r) => { ifr.onload = r; setTimeout(r, 8000); });
+    const w = ifr.contentWindow, doc = ifr.contentDocument;
+    if (!doc) { box.innerHTML = `<div class="loading">Démo indisponible : <a href="${BASE}${esc(group.repo)}/docs/demo.html">l'ouvrir</a>.</div>`; return; }
+    await sleep(1200);
+    const counts = {}, out = [];
+    const take = () => {
+      for (const el of cardsOf(doc)) {
+        const tag = el.localName;
+        if (group.only && !group.only.includes(tag)) continue;
+        if (group.skip && group.skip.includes(tag)) continue;
+        const max = group.keep?.[tag] ?? 1;
+        if ((counts[tag] || 0) >= max) continue;
+        counts[tag] = (counts[tag] || 0) + 1;
+        out.push(el);
+      }
+    };
+    const steps = group.steps || [[]];
+    for (const step of steps) {
+      for (const v of step) { doc.querySelector(`[data-v="${v}"]`)?.click(); await sleep(250); }
+      await sleep(900);
+      take();
+      // les cartes relevées quittent la démo : son prochain rendu en crée de nouvelles
+      for (const el of out) if (el.ownerDocument === doc) {
+        const s = document.createElement("div");
+        s.className = "slot" + (group.wide?.includes(el.localName) ? " wide" : "");
+        s.dataset.tag = el.localName;
+        s.appendChild(el);
+        box.appendChild(s);
+        fixMedia(el, doc.baseURI);
+        const h = el._hass || el.hass;
+        if (h && typeof h === "object") { try { el.hass = absolutize(h, doc.baseURI); } catch (e) { /* carte sans hass modifiable */ } }
+      }
+    }
+    box.querySelector(".loading")?.remove();
+    if (!out.length) box.innerHTML = `<div class="loading">Aucune carte trouvée : <a href="${BASE}${esc(group.repo)}/docs/demo.html">voir la démo</a>.</div>`;
+    void w;
+  }
+
+  async function show(id) {
+    const tab = TABS.find((t) => t.id === id) || TABS[0];
+    tabsEl.querySelectorAll("button").forEach((b) => b.classList.toggle("on", b.dataset.id === tab.id));
+    main.querySelectorAll("section").forEach((s) => { s.hidden = s.dataset.id !== tab.id; });
+    try { history.replaceState(null, "", `#${tab.id}`); } catch (e) { /* adresse non modifiable */ }
+    if (loaded.has(tab.id)) return;
+    loaded.add(tab.id);
+    const sec = main.querySelector(`section[data-id="${tab.id}"]`);
+    for (const g of tab.groups) {
+      const wrap = document.createElement("div");
+      wrap.className = "group";
+      wrap.innerHTML = `<h2>${esc(g.name)}</h2><p class="meta">${esc(g.desc)}<br><a href="${BASE}${esc(g.repo)}/docs/demo.html">🎮 Démo complète</a><a href="https://github.com/Marlboro62/${esc(g.repo)}">📦 GitHub</a></p><div class="grid"><div class="loading">Chargement…</div></div>`;
+      sec.appendChild(wrap);
+      await harvest(g, wrap.querySelector(".grid"));
+    }
+  }
+
+  for (const t of TABS) {
+    const b = document.createElement("button");
+    b.textContent = t.label; b.dataset.id = t.id; b.onclick = () => show(t.id);
+    tabsEl.appendChild(b);
+    const s = document.createElement("section");
+    s.dataset.id = t.id; s.hidden = true;
+    main.appendChild(s);
+  }
+  show(location.hash.slice(1));
+})();
+</script>
+</body>
+</html>
