@@ -190,6 +190,11 @@
     const w = ifr.contentWindow, doc = ifr.contentDocument;
     if (!doc) { box.innerHTML = `<div class="loading">Démo indisponible : <a href="${BASE}${esc(group.repo)}/docs/demo.html">l'ouvrir</a>.</div>`; return; }
     await sleep(1200);
+    // police d'icônes MDI chargée par certaines démos : déclarée aussi dans la vitrine (une police d'un
+    // shadow DOM n'est pas prise en compte, seule celle du document compte)
+    doc.querySelectorAll('link[rel="stylesheet"][href*="materialdesignicons"]').forEach((l) => {
+      if (!document.querySelector(`link[href="${l.href}"]`)) { const n = document.createElement("link"); n.rel = "stylesheet"; n.href = l.href; document.head.append(n); }
+    });
     const counts = {}, out = [];
     const take = () => {
       for (const el of cardsOf(doc)) {
@@ -212,7 +217,14 @@
         const s = document.createElement("div");
         s.className = "slot" + (group.wide?.includes(el.localName) ? " wide" : "");
         s.dataset.tag = el.localName;
+        // Les feuilles de style construites (cartes Lit) appartiennent au document de la démo : elles tombent
+        // quand la carte change de document. Leur texte est remis dans la carte sous forme de <style>.
+        const sr = el.shadowRoot;
+        const css = sr?.adoptedStyleSheets?.length ? [...sr.adoptedStyleSheets].map((sh) => { try { return [...sh.cssRules].map((r) => r.cssText).join("\n"); } catch (e) { return ""; } }).join("\n") : "";
         s.appendChild(el);
+        if (css && sr && !sr.adoptedStyleSheets.length && !sr.querySelector("style[data-vitrine]")) {
+          const st = document.createElement("style"); st.dataset.vitrine = ""; st.textContent = css; sr.prepend(st);
+        }
         box.appendChild(s);
         fixMedia(el, doc.baseURI);
         const h = el._hass || el.hass;
