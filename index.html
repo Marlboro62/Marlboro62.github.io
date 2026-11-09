@@ -89,7 +89,9 @@
   const G = (repo, name, desc, extra = {}) => ({ repo, name, desc, ...extra });
   const TABS = [
     { id: "energie", label: "⚡ Énergie", groups: [
-      G("content-card-linky-new", "Carte Enedis Linky New", "Consommation, production, Tempo et Gazpar avec MyElectricalData new."),
+      G("content-card-linky-new", "Carte Enedis Linky New", "Consommation, production, Tempo et Gazpar avec MyElectricalData new.", {
+        steps: [["dark", "v2", "large", "conso"], ["prod"], ["tempo"], ["gazpar"]] }),
+      G("content-card-linky-v2", "Carte Enedis Linky V2", "La carte Linky classique, compatible avec les exports V1 et V2 de MyElectricalData : EcoWatt, Tempo, prix calculés."),
       G("linky-energie-cards", "Cartes Linky Énergie", "Puissance, facture, postes et prix Tempo, cycle, intensité carbone, services Enedis, EcoWatt."),
       G("linky-appareils-card", "Carte Linky Appareils", "Coût de chaque circuit et de chaque appareil."),
       G("linky-solaire-card", "Carte Linky Solaire", "Production, autoconsommation, import et export, jour par jour."),
@@ -97,13 +99,13 @@
     ] },
     { id: "maison", label: "🏠 Maison", groups: [
       G("maison-ha-cards", "Cartes Maison HA", "Un tableau de bord maison complet, sans button-card.", {
-        steps: [["dark", "v2", "large", "chips"], ["maison"], ["plan"], ["lumieres"], ["volets"], ["tuiles"], ["appareils"], ["menu"]],
+        steps: [["dark", "v2", "large", "chips"], ["maison"], ["plan"], ["pieces"], ["lumieres"], ["volets"], ["tuiles"], ["appareils"], ["menu"], ["navigation"]],
         keep: { "maison-mode-card": 2 }, skip: ["maison-voiture-card", "maison-torque-card", "maison-batteries-card", "maison-telephones-card"] }),
       G("electromenager", "Cartes Électroménager", "L'aspirateur robot en détail, avec la carte du logement."),
       G("nvr-card", "NVR Card", "Enregistreur vidéo : direct, frise 24 h, détections."),
     ] },
     { id: "serveurs", label: "🖥️ Serveurs et réseau", groups: [
-      G("serveur-ha-card", "Cartes Serveur HA", "Serveur, mises à jour, NAS, Proxmox, DNS, Linux, OpenMediaVault, ASUS, réseau, Zigbee, WireGuard, Glances, multimédia."),
+      G("serveur-ha-card", "Cartes Serveur HA", "Serveur, mises à jour, NAS, Proxmox, DNS, Linux, OpenMediaVault, ASUS, Freebox, réseau, Zigbee, WireGuard, Glances, multimédia, GitHub."),
       G("opnsense-card", "Carte OPNsense", "Pare-feu OPNsense : passerelles, débits, ressources."),
       G("onduleur-ups-card", "Carte Onduleur UPS", "État d'un onduleur avec Network UPS Tools."),
     ] },
